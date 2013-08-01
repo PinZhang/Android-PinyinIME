@@ -23,9 +23,13 @@
       parent.removeChild(parent.childNodes[0]);
     }
 
-    var logElem = document.createElement('div');
-    logElem.textContent = getLoggerTime() + ": " + msg;
-    parent.appendChild(logElem);
+    if (typeof msg == 'string') {
+      var logElem = document.createElement('div');
+      logElem.textContent = getLoggerTime() + ": " + msg;
+      parent.appendChild(logElem);
+    } else {
+      parent.appendChild(msg);
+    }
   }
 
   if (!Module['_main']) Module['_main'] = function() {
@@ -36,10 +40,12 @@
     var im_get_candidate_utf8 = Module.cwrap('im_get_candidate_utf8', 'string', ['number']);
     var im_get_predicts = Module.cwrap('im_get_predicts_utf8', 'number', ['string', 'number']);
     var im_get_predict_at = Module.cwrap('im_get_predict_at', 'string', ['number']);
+    var im_choose = Module.cwrap('im_choose', '', ['number']);
+    var im_flush_cache = Module.cwrap('im_flush_cache', '', []);
 
     log('Data file is ready');
     log('Opening data/dict.data ....');
-    if (im_open_decoder('data/dict.data', 'user.dict')) {
+    if (im_open_decoder('data/dict.data', 'data/user_dict.data')) {
       log('Success to open data/dict.data!');
     } else {
       log('Failed to open data/dict.data!');
@@ -77,11 +83,28 @@
       im_reset_search();
       var size = im_search(keyword, keyword.length);
 
-      var candidates = '';
+      var candidates = document.createElement('div');
       for (var i = 0; i < size; i++) {
-        candidates += im_get_candidate_utf8(i) + ' ';
+        var candidate = document.createElement('a');
+        candidate.href = "javascript:void(0);"
+        candidate.style.marginRight = '5px';
+        var str = im_get_candidate_utf8(i);
+        candidate.textContent = str;
+        candidates.appendChild(candidate);
+
+        candidate.dataset.value = str;
+        candidate.dataset.id = i;
+        candidate.onclick = function() {
+          im_choose(this.dataset.id);
+          im_flush_cache();
+          Module['saveFileToDB']('data/user_dict.data', function(success) {
+            alert('Saved user dict: ' + success);
+          });
+        };
       }
-      log(size + ' candidates: ' + candidates);
+
+      log(size + ' candidates: ')
+      log(candidates);
     }
 
     function getPredicts(key) {
