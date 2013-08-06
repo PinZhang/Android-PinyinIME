@@ -142,7 +142,7 @@ extern "C" {
     return (const char16 *) g_utf16_buf;
   }
 
-  const char* im_get_candidate_char(size_t cand_id) {
+  const char* im_get_candidate_utf8(size_t cand_id) {
     if (NULL == matrix_search)
       return NULL;
 

@@ -33,7 +33,7 @@
     var im_reset_search = Module.cwrap('im_reset_search', '', []);
     var im_search = Module.cwrap('im_search', 'number', ['string', 'number']);
     var im_get_candidate = Module.cwrap('im_get_candidate', 'string', ['number', 'string', 'number']);
-    var im_get_candidate_char = Module.cwrap('im_get_candidate_char', 'string', ['number']);
+    var im_get_candidate_utf8 = Module.cwrap('im_get_candidate_utf8', 'string', ['number']);
     var im_get_predicts = Module.cwrap('im_get_predicts_utf8', 'number', ['string', 'number']);
     var im_get_predict_at = Module.cwrap('im_get_predict_at', 'string', ['number']);
 
@@ -79,7 +79,7 @@
 
       var candidates = '';
       for (var i = 0; i < size; i++) {
-        candidates += im_get_candidate_char(i) + ' ';
+        candidates += im_get_candidate_utf8(i) + ' ';
       }
       log(size + ' candidates: ' + candidates);
     }
