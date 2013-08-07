@@ -61,7 +61,7 @@
 
       request.onsuccess = function readdb_oncomplete(event) {
         if (!event.target.result) {
-          createSampleDataForUserDict();
+          initUserDict();
           return;
         }
 
@@ -81,7 +81,7 @@
       };
     }
 
-    function createSampleDataForUserDict() {
+    function initUserDict() {
       saveUserDictFileToDB(USER_DICT, [], readUserDictFileFromDB);
     }
 

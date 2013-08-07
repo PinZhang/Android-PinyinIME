@@ -1,15 +1,19 @@
 (function() {
 
+  function $(id) {
+    return document.getElementById(id);
+  }
+
   if (typeof Module == 'undefined') Module = {};
 
   if (typeof Module['setStatus'] == 'undefined') {
     Module['setStatus'] = function (status) {
-      document.getElementById('status').textContent = status;
+      $('status').textContent = status;
     };
   }
 
   if (typeof Module['canvas'] == 'undefined') {
-    Module['canvas'] = document.getElementById('canvas');
+    Module['canvas'] = $('canvas');
   }
 
   function getLoggerTime() {
@@ -17,9 +21,11 @@
     return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + ":" + date.getMilliseconds();
   }
 
+  var MAX_LOG_NUM = 20;
+
   function log(msg) {
-    var parent = document.getElementById('log');
-    if (parent.childNodes.length > 200) {
+    var parent = $('log');
+    if (parent.childNodes.length > MAX_LOG_NUM) {
       parent.removeChild(parent.childNodes[0]);
     }
 
@@ -30,6 +36,10 @@
     } else {
       parent.appendChild(msg);
     }
+  }
+
+  function clearLog() {
+    $('log').textContent = '';
   }
 
   if (!Module['_main']) Module['_main'] = function() {
@@ -52,19 +62,24 @@
     }
 
     var keywords = [];
-    document.getElementById('test').onclick = function() {
+    $('test').onclick = function() {
       currentIdx = 0;
-      keywords = document.getElementById('pinyin').value.trim().split(' ');
+      keywords = $('pinyin').value.trim().split(' ');
       testNextKeyword();
     };
 
-    document.getElementById('getCandidates').onclick = function() {
-      printCandidates(document.getElementById('pinyin').value.trim());
+    $('getCandidates').onclick = function() {
+      im_reset_search();
+      var keyword = $('pinyin').value.trim();
+      var size = im_search(keyword, keyword.length);
+      printCandidates(size);
     };
 
     document.getElementById('get_predicts').onclick = function() {
       getPredicts(document.getElementById('pinyin').value.trim());
     };
+
+    $('clear_log').onclick = clearLog;
 
     var TIMES = 100;
 
@@ -79,10 +94,7 @@
       }, 0);
     }
 
-    function printCandidates(keyword) {
-      im_reset_search();
-      var size = im_search(keyword, keyword.length);
-
+    function printCandidates(size) {
       var candidates = document.createElement('div');
       for (var i = 0; i < size; i++) {
         var candidate = document.createElement('a');
@@ -95,11 +107,17 @@
         candidate.dataset.value = str;
         candidate.dataset.id = i;
         candidate.onclick = function() {
-          im_choose(this.dataset.id);
-          im_flush_cache();
-          Module['saveFileToDB']('data/user_dict.data', function(success) {
-            alert('Saved user dict: ' + success);
-          });
+          var nextSize = im_choose(this.dataset.id);
+          clearLog();
+          printCandidates(nextSize);
+
+          // nextSize equals 1 means we finished candidates selection.
+          if (nextSize == 1) {
+            im_flush_cache();
+            Module['saveFileToDB']('data/user_dict.data', function(success) {
+              alert('Saved user dict: ' + success);
+            });
+          }
         };
       }
 
@@ -129,7 +147,7 @@
 
     window.test = function (keyword) {
       try {
-        var times = parseInt(document.getElementById('times').value);
+        var times = parseInt($('times').value);
         log('search ' + times + ' times keyword "' + keyword + '"');
 
         var startTime = new Date().getTime();
