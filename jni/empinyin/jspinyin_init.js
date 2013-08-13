@@ -48,7 +48,7 @@
     var im_search = Module.cwrap('im_search', 'number', ['string', 'number']);
     var im_get_candidate = Module.cwrap('im_get_candidate', 'string', ['number', 'string', 'number']);
     var im_get_candidate_utf8 = Module.cwrap('im_get_candidate_utf8', 'string', ['number']);
-    var im_get_predicts = Module.cwrap('im_get_predicts_utf8', 'number', ['string', 'number']);
+    var im_get_predicts = Module.cwrap('im_get_predicts_utf8', 'number', ['string']);
     var im_get_predict_at = Module.cwrap('im_get_predict_at', 'string', ['number']);
     var im_choose = Module.cwrap('im_choose', '', ['number']);
     var im_flush_cache = Module.cwrap('im_flush_cache', '', []);
@@ -126,23 +126,15 @@
     }
 
     function getPredicts(key) {
-      var buf = Module._malloc(500 * 8 * 6);
-      var arrayBuffer = new Uint8Array(500 * 8 * 6);
-
-      var n = im_get_predicts(key, buf);
+      var n = im_get_predicts(key);
       log('Get ' + n + ' predicts for "' + key + '": ');
 
-      var base = HEAP32[buf >> 2];
       var predicts = [];
-      var textDecoder = new TextDecoder('UTF8');
       for (var i = 0; i < n; i++) {
-        var arrayBuffer = HEAPU8.subarray(base + i * 8 * 6, base + i * 8 * 6 + 8 * 6);
-        predicts.push(textDecoder.decode(arrayBuffer));
+        predicts.push(im_get_predict_at(i));
       }
 
       log(predicts.join(' '));
-
-      Module._free(buf);
     }
 
     window.test = function (keyword) {

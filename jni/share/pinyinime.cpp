@@ -38,7 +38,6 @@ extern "C" {
   MatrixSearch* matrix_search = NULL;
 
   char16 predict_buf[kMaxPredictNum][kMaxPredictSize + 1];
-  char predict_buf_utf8[kMaxPredictNum][(kMaxPredictSize + 1) * 6];
 
   bool im_open_decoder(const char *fn_sys_dict, const char *fn_usr_dict) {
     if (NULL != matrix_search)
@@ -184,8 +183,7 @@ extern "C" {
    * @param buf
    * @return
    */
-  size_t im_get_predicts_utf8(const char *buf,
-                              char (*&pre_buf)[(kMaxPredictSize + 1) * 6]) {
+  size_t im_get_predicts_utf8(const char *buf) {
     if (NULL == buf)
       return 0;
 
@@ -200,13 +198,6 @@ extern "C" {
 
     size_t num = matrix_search->get_predicts(his_buf, predict_buf, kMaxPredictNum);
 
-    // Convert char16 predicts to char predicts
-    pre_buf = predict_buf_utf8;
-
-    for (size_t idx = 0; idx < kMaxPredictNum; idx++) {
-      strcpy(pre_buf[idx], toUTF8(predict_buf[idx], kMaxPredictSize + 1));
-    }
-
     return num;
   }
 
@@ -214,7 +205,7 @@ extern "C" {
     if (pos >= kMaxPredictNum)
       return NULL;
 
-    return predict_buf_utf8[pos];
+    return toUTF8(predict_buf[pos], kMaxPredictSize + 1);
   }
 
   size_t im_get_predicts(const char16 *his_buf,
