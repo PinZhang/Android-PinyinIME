@@ -1,10 +1,14 @@
+/* -*- Mode: js; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- /
+/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
+
 (function() {
   if (typeof Module == 'undefined') Module = {};
   if (!Module['preRun']) Module['preRun'] = [];
 
   function getLoggerTime() {
     var date = new Date();
-    return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + ":" + date.getMilliseconds();
+    return date.getHours() + ':' + date.getMinutes() +
+           ':' + date.getSeconds() + ':' + date.getMilliseconds();
   }
 
   function log(msg) {
@@ -15,15 +19,19 @@
 
     if (typeof msg == 'string') {
       var logElem = document.createElement('div');
-      logElem.textContent = getLoggerTime() + ": " + msg;
+      logElem.textContent = getLoggerTime() + ': ' + msg;
       parent.appendChild(logElem);
     } else {
       parent.appendChild(msg);
     }
   }
 
-  Module["preRun"].push(function() {
+  Module['preRun'].push(function() {
     Module['addRunDependency']('fp data/user_dict.data');
+
+    function removeRunDependency() {
+      Module['removeRunDependency']('fp data/user_dict.data');
+    }
 
     // Load user.dict from IndexedDB
     var indexedDB = window.indexedDB;
@@ -61,7 +69,10 @@
 
       request.onsuccess = function readdb_oncomplete(event) {
         if (!event.target.result) {
-          initUserDict();
+          // Create an empty file if it doesn't exist.
+          var request = saveFileToDB(USER_DICT, []);
+          request.onsuccess = readUserDictFileFromDB;
+          request.onerror = removeRunDependency;
           return;
         }
 
@@ -69,50 +80,40 @@
         var byteArray = event.target.result.content;
 
         // Write user dict data into FS
-        //alert(FS.findObject('data/user_dict.data').contents);
         Module['FS_createPreloadedFile']('/data', 'user_dict.data',
                                          byteArray, true, true, function() {
-          Module['removeRunDependency']('fp data/user_dict.data');
+          removeRunDependency();
         });
       };
 
       request.onerror = function readdb_oncomplete(event) {
-        alert('error to get file: ' + event.target.result.name);
+        log('error to get file: ' + event.target.result.name);
+        removeRunDependency();
       };
     }
 
-    function initUserDict() {
-      saveUserDictFileToDB(USER_DICT, [], readUserDictFileFromDB);
-    }
-
-    function saveUserDictFileToDB(name, byteArray, callback) {
-      var request = db.transaction([STORE_NAME], 'readwrite')
-                      .objectStore(STORE_NAME).put({
-                          name: name,
-                          content: byteArray
-                        });
-
-      request.onsuccess = function writedb_onsuccess(event) {
-        callback(true);
+    function saveFileToDB(name, byteArray) {
+      var obj = {
+        name: name,
+        content: byteArray
       };
 
-      request.onerror = function writedb_onerror(event) {
-        callback(false);
+      return db.transaction([STORE_NAME], 'readwrite')
+               .objectStore(STORE_NAME).put(obj);
+    }
+
+    if (!Module['saveUserDictFileToDB']) {
+      Module['saveUserDictFileToDB'] = function(name, callback) {
+        if (!FS) {
+          log('No FS is Found');
+          return null;
+        }
+
+        return saveFileToDB(USER_DICT,
+                            FS.findObject(name).contents,
+                            callback);
       };
     }
-
-    function saveFileToDB(name, callback) {
-      if (!FS) {
-        log('No FS is Found');
-        return;
-      }
-
-      saveUserDictFileToDB(USER_DICT,
-                           FS.findObject(name).contents,
-                           callback);
-    }
-
-    if (!Module['saveFileToDB']) Module['saveFileToDB'] = saveFileToDB;
   });
 })();
 

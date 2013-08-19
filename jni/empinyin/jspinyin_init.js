@@ -114,9 +114,13 @@
           // nextSize equals 1 means we finished candidates selection.
           if (nextSize == 1) {
             im_flush_cache();
-            Module['saveFileToDB']('data/user_dict.data', function(success) {
-              alert('Saved user dict: ' + success);
-            });
+            var request = Module['saveUserDictFileToDB']('data/user_dict.data');
+            request.onsuccess = function() {
+              alert('Saved user dict!');
+            };
+            request.onerror = function() {
+              alert('Failed to save user dict!');
+            };
           }
         };
       }
